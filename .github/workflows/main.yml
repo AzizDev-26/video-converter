@@ -1,40 +1,32 @@
-name: Video Auto Convert
+name: Video Converter Pro
 on:
   workflow_dispatch:
 
 jobs:
-  convert:
+  download_and_convert:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Tools
+      # 1. تثبيت الأداة باستخدام المشروع الذي وجدته
+      - name: Setup yt-dlp
+        uses: AnimMouse/setup-yt-dlp@v3
+        with:
+          with-ffmpeg: true # يقوم بتثبيت FFmpeg تلقائياً كما طلبت
+          
+      # 2. عملية التحميل والتحويل (أضفت أوامر لمنع الحظر)
+      - name: Run yt-dlp
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg curl
-          sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
-          sudo chmod a+rx /usr/local/bin/yt-dlp
-
-      - name: Download and Convert
-        id: download
-        run: |
-          # استخدام متصفح وهمي حديث جداً لتجنب الحظر
           yt-dlp -f "bv*[height<=1080]+ba/b" \
           --download-sections "*00:00:00-01:00:00" \
           --merge-output-format mp4 \
-          --user-agent "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36" \
-          --no-check-certificate \
-          --prefer-free-formats \
-          -o "output_video.mp4" \
+          --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36" \
+          -o "fireplace_video.mp4" \
           "https://www.youtube.com/watch?v=g6Ye4xwXyAw"
 
+      # 3. الرفع ليعطيك رابط تحميل مباشر
       - name: Upload to Transfer.sh
-        if: success()
         run: |
-          echo "--- جاري الرفع الآن، انتظر الرابط أدناه ---"
-          # رفع الملف والحصول على رابط تحميل مباشر
-          DOWNLOAD_URL=$(curl --upload-file ./output_video.mp4 https://transfer.sh/output_video.mp4)
-          echo "************************************************"
-          echo "رابط التحميل المباشر: $DOWNLOAD_URL"
-          echo "************************************************"
+          echo "--- جاري الرفع... انتظر الرابط ---"
+          URL=$(curl --upload-file ./fireplace_video.mp4 https://transfer.sh/fireplace_video.mp4)
+          echo "****************************************"
+          echo "رابط التحميل الخاص بك: $URL"
+          echo "****************************************"
