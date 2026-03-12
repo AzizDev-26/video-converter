@@ -1,35 +1,40 @@
 name: Video Auto Convert
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
 
 jobs:
   convert:
     runs-on: ubuntu-latest
     steps:
-      - name: Install yt-dlp & FFmpeg
-        run: |
-          sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp
-          sudo chmod a+rx /usr/local/bin/yt-dlp
-          sudo apt update && sudo apt install ffmpeg -y
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Download & Convert (Logs Visible)
+      - name: Setup Tools
         run: |
-          # استخدام User-Agent لمتصفح حقيقي لتجنب الحظر بدون كوكيز
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg curl
+          sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+          sudo chmod a+rx /usr/local/bin/yt-dlp
+
+      - name: Download and Convert
+        id: download
+        run: |
+          # استخدام متصفح وهمي حديث جداً لتجنب الحظر
           yt-dlp -f "bv*[height<=1080]+ba/b" \
           --download-sections "*00:00:00-01:00:00" \
           --merge-output-format mp4 \
-          --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" \
-          "https://www.youtube.com/watch?v=g6Ye4xwXyAw" \
-          -o "final_video.mp4"
-          
-      - name: Share Link (Transfer.sh)
+          --user-agent "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36" \
+          --no-check-certificate \
+          --prefer-free-formats \
+          -o "output_video.mp4" \
+          "https://www.youtube.com/watch?v=g6Ye4xwXyAw"
+
+      - name: Upload to Transfer.sh
+        if: success()
         run: |
-          # رفع الملف والحصول على الرابط في الـ Logs
-          echo "جاري رفع الملف... انتظر الرابط"
-          curl --upload-file ./final_video.mp4 https://transfer.sh/final_video.mp4 > link.txt
-          echo "**********************************************"
-          echo "رابط تحميل الفيديو الخاص بك هو:"
-          cat link.txt
-          echo "**********************************************"
+          echo "--- جاري الرفع الآن، انتظر الرابط أدناه ---"
+          # رفع الملف والحصول على رابط تحميل مباشر
+          DOWNLOAD_URL=$(curl --upload-file ./output_video.mp4 https://transfer.sh/output_video.mp4)
+          echo "************************************************"
+          echo "رابط التحميل المباشر: $DOWNLOAD_URL"
+          echo "************************************************"
