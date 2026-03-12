@@ -1,8 +1,8 @@
 name: Video Auto Convert
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   convert:
@@ -13,19 +13,23 @@ jobs:
           sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp
           sudo chmod a+rx /usr/local/bin/yt-dlp
           sudo apt update && sudo apt install ffmpeg -y
-      
-      - name: Download and Convert to MP4
+
+      - name: Download & Convert (Logs Visible)
         run: |
-          # سيقوم بالتحميل والدمج في صيغة mp4 مباشرة باستخدام سيرفرات جيت هاب
-          yt-dlp -f "bv*[height<=2160]+ba/b" \
+          # استخدام User-Agent لمتصفح حقيقي لتجنب الحظر بدون كوكيز
+          yt-dlp -f "bv*[height<=1080]+ba/b" \
           --download-sections "*00:00:00-01:00:00" \
           --merge-output-format mp4 \
+          --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" \
           "https://www.youtube.com/watch?v=g6Ye4xwXyAw" \
-          -o "fireplace_4k.mp4"
+          -o "final_video.mp4"
           
-      - name: Upload to Transfer.sh
+      - name: Share Link (Transfer.sh)
         run: |
-          # هذا السطر سيرفع الملف ويعطيك رابط تحميل مباشر في سجلات العمل (Logs)
-          curl --upload-file ./fireplace_4k.mp4 https://transfer.sh/fireplace_4k.mp4 > download_link.txt
-          echo "رابط التحميل المباشر هو:"
-          cat download_link.txt
+          # رفع الملف والحصول على الرابط في الـ Logs
+          echo "جاري رفع الملف... انتظر الرابط"
+          curl --upload-file ./final_video.mp4 https://transfer.sh/final_video.mp4 > link.txt
+          echo "**********************************************"
+          echo "رابط تحميل الفيديو الخاص بك هو:"
+          cat link.txt
+          echo "**********************************************"
